@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -17,6 +18,26 @@ func main() {
 	duration := time.Duration(durationArg) * time.Minute
 
 	log.Println("Automatic suspend in ", duration)
+
+    startTime := time.Now()
+    exitTime := startTime.Add(duration)
+    fmt.Println("Start time: ", startTime.Format(time.RFC822), "\nExit time: ", exitTime.Format(time.RFC822))
+
+	ticker := time.NewTicker(duration / 10)
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+                timeLeft := exitTime.Sub(time.Now())
+				log.Println("Automatic suspend in ", timeLeft.Round(time.Second))
+			case <-done:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
 	time.Sleep(duration)
 	log.Println("Suspending system...")
 
@@ -24,4 +45,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error suspending system:", err)
 	}
+
+    done <- true
 }
